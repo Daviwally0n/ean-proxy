@@ -1,4 +1,14 @@
 export default async function handler(req, res) {
+  // ===== CORS =====
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+  // =================
+
   const { tipo, codigo } = req.query;
 
   if (!codigo) {
@@ -24,7 +34,6 @@ export default async function handler(req, res) {
 
     const data = await response.text();
 
-    // evita resposta vazia
     if (!data || data.trim() === "") {
       return res.status(404).send("Sem dados");
     }
@@ -36,3 +45,4 @@ export default async function handler(req, res) {
     return res.status(500).send("Erro ao consultar API externa");
   }
 }
+
