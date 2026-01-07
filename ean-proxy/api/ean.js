@@ -1,4 +1,5 @@
 export default async function handler(req, res) {
+  // CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -9,6 +10,7 @@ export default async function handler(req, res) {
 
   const { tipo, codigo } = req.query;
 
+  // validação
   if (!codigo || !/^\d{8,14}$/.test(codigo)) {
     return res.status(200).send("");
   }
@@ -28,16 +30,11 @@ export default async function handler(req, res) {
 
     let descricao = "";
 
-    // extração robusta
-    const match =
-      html.match(/<h1[^>]*>(.*?)<\/h1>/i) ||
-      html.match(/<title>(.*?)<\/title>/i);
+    // extração do nome do produto
+    const match = html.match(/<h1>\s*<a[^>]*>(.*?)<\/a>/i);
 
     if (match) {
-      descricao = match[1]
-        .replace(/\s+-\s+Product Search.*/i, "")
-        .replace(/<[^>]+>/g, "")
-        .trim();
+      descricao = match[1].replace(/\s+/g, " ").trim();
     }
 
     if (!descricao) {
@@ -59,4 +56,3 @@ export default async function handler(req, res) {
     return res.status(200).send("Produto não identificado");
   }
 }
-
