@@ -1,60 +1,34 @@
-export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
+export default function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { tipo, codigo } = req.query;
+  const { user, pass } = req.body;
 
-  if (!codigo || !/^\d{8,14}$/.test(codigo)) {
-    return res.status(200).send("");
+  if (!user || !pass) {
+    return res.status(400).json({ error: "Dados incompletos" });
   }
 
-  try {
-    const response = await fetch(
-      `https://pt.product-search.net/?q=${codigo}`,
-      {
-        headers: {
-          "User-Agent": "Mozilla/5.0",
-          "Accept-Language": "pt-BR,pt;q=0.9"
-        }
-      }
-    );
+  // Lê usuários do ambiente (Vercel)
+  const users = JSON.parse(process.env.USERS_JSON || "[]");
 
-    const html = await response.text();
+  const autorizado = users.find(
+    u => u.user === user && u.pass === pass
+  );
 
-    let descricao = "";
-
-    const match =
-      html.match(/<h1[^>]*>(.*?)<\/h1>/i) ||
-      html.match(/<title>(.*?)<\/title>/i);
-
-    if (match) {
-      descricao = match[1]
-        .replace(/<[^>]+>/g, "")
-        .replace(/\(\*\)/g, "")
-        .trim();
-    }
-
-    if (!descricao) {
-      descricao = "Produto não identificado";
-    }
-
-    if (tipo === "descricao") {
-      return res.status(200).send(descricao);
-    }
-
-    if (tipo === "gtin") {
-      return res.status(200).send(codigo);
-    }
-
-    return res.status(200).send("");
-
-  } catch (err) {
-    console.error("EAN proxy error:", err);
-    return res.status(200).send("Produto não identificado");
+  if (!autorizado) {
+    return res.status(401).json({ error: "Usuário ou senha inválidos" });
   }
+
+  // Token simples
+  const token = Buffer.from(
+    `${user}:${Date.now()}`
+  ).toString("base64");
+
+  return res.status(200).json({
+    ok: true,
+    usuario: user,
+    token
+  });
 }
+
